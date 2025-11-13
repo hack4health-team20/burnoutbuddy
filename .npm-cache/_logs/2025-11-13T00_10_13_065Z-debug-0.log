@@ -1,0 +1,22 @@
+0 verbose cli /usr/local/bin/node /usr/local/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.13.1
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/ayushroy/Downloads/Hackathon/ucal/burnoutBuster/.npmrc
+5 silly config load:file:/Users/ayushroy/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm exec create-next-app@latest burnout-buddy --typescript --tailwind --eslint --app --src-dir --import-alias @/* --use-npm
+8 verbose argv "exec" "--" "create-next-app@latest" "burnout-buddy" "--typescript" "--tailwind" "--eslint" "--app" "--src-dir" "--import-alias" "@/*" "--use-npm"
+9 verbose logfile logs-max:10 dir:/Users/ayushroy/Downloads/Hackathon/ucal/burnoutBuster/.npm-cache/_logs/2025-11-13T00_10_13_065Z-
+10 verbose logfile /Users/ayushroy/Downloads/Hackathon/ucal/burnoutBuster/.npm-cache/_logs/2025-11-13T00_10_13_065Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+13 http fetch GET 200 https://registry.npmjs.org/create-next-app 274ms (cache revalidated)
+14 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+15 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+16 verbose cwd /Users/ayushroy/Downloads/Hackathon/ucal/burnoutBuster
+17 verbose os Darwin 25.1.0
+18 verbose node v22.13.1
+19 verbose npm  v10.9.2
+20 verbose exit 0
+21 info ok
