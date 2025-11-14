@@ -2,16 +2,22 @@
 
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChipToggle } from "@/components/ui/chip-toggle";
 import { MoodSelector } from "@/components/mood/mood-selector";
+import { AIWellnessCoach } from "@/components/ai-wellness-coach/ai-wellness-coach";
 import { useAppState } from "@/context/app-state-context";
+import { MoodValue } from "@/types";
 
 export default function HomePage() {
   const router = useRouter();
   const { moodForm, updateMoodForm, commitMoodSelection, weeklySummary } = useAppState();
+  const [activeTab, setActiveTab] = useState<"mood" | "ai">("mood");
+  const [aiDetectedMood, setAiDetectedMood] = useState<MoodValue | null>(null);
+  const [aiRecommendationReason, setAiRecommendationReason] = useState<string>("");
 
   const handleGetReset = () => {
     const recommendation = commitMoodSelection();
@@ -20,10 +26,19 @@ export default function HomePage() {
     }
   };
 
+  const handleAIDetectedMood = (mood: MoodValue, reason: string) => {
+    setAiDetectedMood(mood);
+    setAiRecommendationReason(reason);
+    updateMoodForm({ mood });
+  };
+
   const latestCheckIn = weeklySummary.points
     .slice()
     .reverse()
     .find((point) => point.checkIns > 0);
+
+  // If AI detected a mood, use that instead of the form mood for the reset button
+  const currentMood = activeTab === "ai" && aiDetectedMood ? aiDetectedMood : moodForm.mood;
 
   return (
     <AppShell
@@ -37,58 +52,116 @@ export default function HomePage() {
             <p className="mt-2 text-sm text-[var(--muted)]">
               One tap. No judgement. The more you check in, the better your resets adapt to you.
             </p>
-          </div>
-
-          <MoodSelector value={moodForm.mood} onSelect={(value) => updateMoodForm({ mood: value })} />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-[var(--radius-md)] border border-white/40 bg-white/60 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]/70">On shift?</p>
-              <div className="mt-3 flex gap-3">
-                <ChipToggle
-                  active={moodForm.shift}
-                  onClick={() => updateMoodForm({ shift: true })}
-                >
-                  Yes
-                </ChipToggle>
-                <ChipToggle
-                  active={!moodForm.shift}
-                  onClick={() => updateMoodForm({ shift: false })}
-                >
-                  Not right now
-                </ChipToggle>
-              </div>
-            </div>
-            <div className="rounded-[var(--radius-md)] border border-white/40 bg-white/60 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]/70">Time available</p>
-              <div className="mt-3 flex gap-3">
-                <ChipToggle
-                  active={moodForm.timeAvailable === "2m"}
-                  onClick={() => updateMoodForm({ timeAvailable: "2m" })}
-                >
-                  About 2 minutes
-                </ChipToggle>
-                <ChipToggle
-                  active={moodForm.timeAvailable === "5m"}
-                  onClick={() => updateMoodForm({ timeAvailable: "5m" })}
-                >
-                  About 5 minutes
-                </ChipToggle>
-              </div>
+            
+            {/* Tabs for switching between mood selection and AI coach */}
+            <div className="mt-4 flex rounded-full bg-white/70 p-1 border border-white/40 shadow-sm">
+              <button
+                className={`flex-1 rounded-full py-2 text-sm font-medium transition ${
+                  activeTab === "mood"
+                    ? "bg-[var(--accent)] text-white shadow-sm"
+                    : "text-[var(--muted)] hover:bg-white/70"
+                }`}
+                onClick={() => setActiveTab("mood")}
+              >
+                Quick Check-in
+              </button>
+              <button
+                className={`flex-1 rounded-full py-2 text-sm font-medium transition ${
+                  activeTab === "ai"
+                    ? "bg-[var(--accent)] text-white shadow-sm"
+                    : "text-[var(--muted)] hover:bg-white/70"
+                }`}
+                onClick={() => setActiveTab("ai")}
+              >
+                AI Wellness Coach
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-              <p className="text-sm text-[var(--muted)]">
-                Micro-resets keep you steady. Try a daily check-in streak—it takes less than a sip of
-                water.
-              </p>
-            </motion.div>
-            <Button size="lg" disabled={!moodForm.mood} onClick={handleGetReset}>
-              Get a Reset
-            </Button>
-          </div>
+          {/* Mood selection tab */}
+          {activeTab === "mood" && (
+            <>
+              <MoodSelector value={moodForm.mood} onSelect={(value) => updateMoodForm({ mood: value })} />
+            </>
+          )}
+
+          {/* AI wellness coach tab */}
+          {activeTab === "ai" && (
+            <div className="h-[450px]">
+              <AIWellnessCoach 
+                onMoodSelected={handleAIDetectedMood} 
+                timeAvailable={moodForm.timeAvailable}
+                onShift={moodForm.shift}
+              />
+            </div>
+          )}
+
+          {/* Common controls - only show when mood is selected */}
+          {currentMood && (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-[var(--radius-md)] border border-white/40 bg-white/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]/70">On shift?</p>
+                  <div className="mt-3 flex gap-3">
+                    <ChipToggle
+                      active={moodForm.shift}
+                      onClick={() => updateMoodForm({ shift: true })}
+                    >
+                      Yes
+                    </ChipToggle>
+                    <ChipToggle
+                      active={!moodForm.shift}
+                      onClick={() => updateMoodForm({ shift: false })}
+                    >
+                      Not right now
+                    </ChipToggle>
+                  </div>
+                </div>
+                <div className="rounded-[var(--radius-md)] border border-white/40 bg-white/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]/70">Time available</p>
+                  <div className="mt-3 flex gap-3">
+                    <ChipToggle
+                      active={moodForm.timeAvailable === "2m"}
+                      onClick={() => updateMoodForm({ timeAvailable: "2m" })}
+                    >
+                      About 2 minutes
+                    </ChipToggle>
+                    <ChipToggle
+                      active={moodForm.timeAvailable === "5m"}
+                      onClick={() => updateMoodForm({ timeAvailable: "5m" })}
+                    >
+                      About 5 minutes
+                    </ChipToggle>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                  <p className="text-sm text-[var(--muted)]">
+                    Micro-resets keep you steady. Try a daily check-in streak—it takes less than a sip of
+                    water.
+                  </p>
+                </motion.div>
+                <Button size="lg" disabled={!currentMood} onClick={handleGetReset}>
+                  Get a Reset
+                </Button>
+              </div>
+              
+              {/* Show AI recommendation reason when AI mode is used */}
+              {activeTab === "ai" && aiRecommendationReason && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 8 }} 
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-[var(--radius-md)] border border-white/40 bg-white/60 p-4"
+                >
+                  <p className="text-sm text-[var(--muted)]">
+                    <span className="font-medium text-[var(--text)]">AI Analysis:</span> {aiRecommendationReason}
+                  </p>
+                </motion.div>
+              )}
+            </>
+          )}
         </Card>
 
         <div className="flex flex-col gap-4">
