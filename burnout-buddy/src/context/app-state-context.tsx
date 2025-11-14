@@ -177,7 +177,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     const recommendation = buildRecommendation(
       state.moodForm.mood,
       state.moodForm.timeAvailable,
-      state.moodForm.shift
+      state.moodForm.shift,
+      state.data // Pass historical data for ML recommendations
     );
 
     const checkIn: MoodCheckIn = {
@@ -200,28 +201,30 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     }));
 
     return recommendation;
-  }, [state.moodForm.mood, state.moodForm.shift, state.moodForm.timeAvailable]);
+  }, [state.moodForm.mood, state.moodForm.shift, state.moodForm.timeAvailable, state.data]);
 
   const rotateRecommendation = useCallback(() => {
     setState((prev) => {
-      if (!prev.recommendation) return prev;
-      const [next, ...rest] = prev.recommendation.alternatives;
-      if (!next) return prev;
-      const newAlternatives = [...rest, prev.recommendation.primary];
+      if (!prev.recommendation || !prev.moodForm.mood) return prev;
+      
+      // Build new recommendation with current form state and historical data
+      const newRecommendation = buildRecommendation(
+        prev.moodForm.mood,
+        prev.moodForm.timeAvailable,
+        prev.moodForm.shift,
+        prev.data // Pass historical data for ML recommendations
+      );
+      
       return {
         ...prev,
-        recommendation: {
-          ...prev.recommendation,
-          primary: next,
-          alternatives: newAlternatives,
-        },
+        recommendation: newRecommendation,
         data: {
           ...prev.data,
           checkIns: prev.data.checkIns.map((checkIn) =>
             checkIn.id === prev.activeCheckInId
               ? {
                   ...checkIn,
-                  practiceId: next.id,
+                  practiceId: newRecommendation.primary.id,
                 }
               : checkIn
           ),
