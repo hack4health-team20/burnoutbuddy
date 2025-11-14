@@ -1,5 +1,6 @@
 import { PRACTICES, PRACTICE_LOOKUP, practiceSupportsTime } from "@/content/practices";
-import { MoodValue, RecommendationResult, TimeAvailable } from "@/types";
+import { MoodValue, RecommendationResult, TimeAvailable, BurnoutData } from "@/types";
+import { getMLRecommendations } from "./ml-recommendation";
 
 const timeCopy: Record<TimeAvailable, string> = {
   "2m": "2 minutes",
@@ -24,13 +25,24 @@ export const formatMood = (mood: MoodValue) => {
 export const buildRecommendation = (
   mood: MoodValue,
   timeAvailable: TimeAvailable,
-  onShift: boolean
+  onShift: boolean,
+  historicalData?: BurnoutData
 ): RecommendationResult => {
-  const matched = PRACTICES.filter(
-    (practice) => practice.tags.includes(mood) && practiceSupportsTime(practice, timeAvailable)
-  );
+  
+  let rankedPractices: typeof PRACTICES = [];
+  
+  // If we have historical data, use ML to rank practices
+  if (historicalData) {
+    rankedPractices = getMLRecommendations(mood, timeAvailable, onShift, PRACTICES, historicalData);
+  } else {
+    // Fallback to original logic if no historical data
+    rankedPractices = PRACTICES.filter(
+      (practice) => practice.tags.includes(mood) && practiceSupportsTime(practice, timeAvailable)
+    );
+  }
 
-  if (!matched.length) {
+  // If no matching practices found, use fallback
+  if (!rankedPractices.length) {
     const fallback = PRACTICES.find((practice) => practiceSupportsTime(practice, timeAvailable));
     if (!fallback) {
       throw new Error("No practices available for the selected filters.");
@@ -43,10 +55,8 @@ export const buildRecommendation = (
     };
   }
 
-  const primary = matched[0];
-  const alternatives = matched.slice(1).concat(
-    PRACTICES.filter((practice) => !matched.includes(practice) && practiceSupportsTime(practice, timeAvailable))
-  );
+  const primary = rankedPractices[0];
+  const alternatives = rankedPractices.slice(1);
 
   const reasonParts = [
     `You selected ${formatMood(mood).toLowerCase()} with about ${timeCopy[timeAvailable]}.`,
@@ -55,6 +65,11 @@ export const buildRecommendation = (
 
   if (onShift) {
     reasonParts.unshift("You're on shift, so we picked something you can do between patients.");
+  }
+
+  // If we have historical data, add a personalized note
+  if (historicalData) {
+    reasonParts.unshift(`Based on your patterns, this practice often helps when you're feeling ${formatMood(mood).toLowerCase()}.`);
   }
 
   return {
