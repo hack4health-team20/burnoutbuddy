@@ -1,4 +1,5 @@
 import { MoodValue, TimeAvailable, Practice, BurnoutData, ResetLog, MoodCheckIn } from "@/types";
+import { practiceSupportsTime } from "@/content/practices";
 
 // Define the ML model for personalized recommendations
 interface PracticeEffectiveness {
@@ -64,7 +65,7 @@ const analyzeUserPatterns = (checkIns: MoodCheckIn[], resets: ResetLog[]): UserP
       // Track time of day and day of week patterns
       const hour = getHour(reset.startedAt);
       const day = getDayOfWeek(reset.startedAt);
-      
+
       timeOfDayPatterns[hour] = (timeOfDayPatterns[hour] || 0) + improvement;
       dayOfWeekPatterns[day] = (dayOfWeekPatterns[day] || 0) + improvement;
 
@@ -119,7 +120,7 @@ const calculatePracticeScore = (
   const userMoodEffectiveness = historicalEffectiveness
     .filter(e => e.practiceId === practice.id && e.mood === mood)
     .reduce((sum, e) => sum + e.effectivenessScore, 0);
-  
+
   baseScore += userMoodEffectiveness * 0.3; // Weight: 30%
 
   // Factor 2: Time of day pattern matching
@@ -144,9 +145,9 @@ const calculatePracticeScore = (
   }
 
   // Factor 5: Time matching
-  if (timeAvailable === "2m" && practice.durationSeconds <= 180) {
+  if (timeAvailable === "2m" && practiceSupportsTime(practice, "2m")) {
     baseScore += 0.05; // Small bonus for matching time
-  } else if (timeAvailable === "5m" && practice.durationSeconds > 180) {
+  } else if (timeAvailable === "5m" && practiceSupportsTime(practice, "5m")) {
     baseScore += 0.05; // Small bonus for matching time
   }
 
@@ -218,10 +219,9 @@ export const getMLRecommendations = (
 
   // Score all practices based on ML algorithm
   const scoredPractices = practices
-    .filter(practice => 
-      practice.tags.includes(mood) && 
-      (timeAvailable === "2m" ? practice.durationSeconds <= 180 : true) &&
-      (timeAvailable === "5m" ? practice.durationSeconds > 180 : true)
+    .filter(practice =>
+      practice.tags.includes(mood) &&
+      practiceSupportsTime(practice, timeAvailable)
     )
     .map(practice => ({
       practice,
@@ -241,7 +241,7 @@ export const getMLRecommendations = (
   if (scoredPractices.length === 0) {
     // Fallback to original recommendation logic
     return practices.filter(p => p.tags.includes(mood))
-      .filter(p => timeAvailable === "2m" ? p.durationSeconds <= 180 : true)
+      .filter(p => practiceSupportsTime(p, timeAvailable))
       .slice(0, 3);
   }
 
@@ -254,9 +254,9 @@ export const getPracticeEffectivenessForMood = (
   mood: MoodValue,
   effectivenessData: PracticeEffectiveness[]
 ): number => {
-  const effectiveness = effectivenessData.find(e => 
+  const effectiveness = effectivenessData.find(e =>
     e.practiceId === practiceId && e.mood === mood
   );
-  
+
   return effectiveness ? effectiveness.effectivenessScore : 0.5; // Default to neutral
 };
