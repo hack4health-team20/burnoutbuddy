@@ -238,7 +238,7 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
       </div>
 
       {/* Mood confirmation buttons (only appear when AI suggests a mood) */}
-      {messages.length > 0 && messages[messages.length - 1]?.text.includes("Would you like me to select") && (
+      {messages.length > 0 && messages[messages.length - 1]?.text.includes("Should I select") && (
         <div className="p-4 border-t border-white/40 bg-white/50 rounded-b-[var(--radius-lg)]">
           <p className="text-sm text-[var(--muted)] mb-3">Confirm your mood:</p>
           <div className="flex flex-wrap gap-2">
