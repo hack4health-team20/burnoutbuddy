@@ -276,7 +276,7 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
             variant="secondary"
             onClick={handleVoiceInput}
             disabled={isLoading}
-            className={`w-12 h-12 flex items-center justify-center rounded-full shadow-sm ${isRecording ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-white/90 hover:bg-white text-[var(--accent)]'}`}
+            className={`w-12 h-12 flex items-center justify-center rounded-full shadow-sm ${isRecording ? '!bg-red-500 !hover:bg-red-600' : '!bg-[var(--accent)] !hover:bg-[var(--accent-strong)]'} !text-white`}
           >
             {isRecording ? (
               <span className="flex h-4 w-4">
