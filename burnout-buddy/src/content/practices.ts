@@ -76,7 +76,7 @@ export const PRACTICES: Practice[] = [
     steps: [
       "Close eyes or soften gaze and count breaths backwards from 10.",
       "If thoughts intrude, warmly notice them and restart at 10.",
-      "End by naming one thing you&#39;re grateful to have handled today.",
+      "End by naming one thing you're grateful to have handled today.",
     ],
     timeOptions: ["2m"],
   },
