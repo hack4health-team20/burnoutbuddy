@@ -5,10 +5,14 @@ import { AppShell } from "@/components/layout/app-shell";
 import { WeeklyChart } from "@/components/insights/weekly-chart";
 import { Card } from "@/components/ui/card";
 import { useAppState } from "@/context/app-state-context";
+import { useAuth } from "@/context/auth-context";
 import { PRACTICE_LOOKUP } from "@/content/practices";
+import { AIStoryCard } from "@/components/gamification/ai-story-card";
+import { GamificationInput } from "@/types";
 
 export default function InsightsPage() {
   const { data, weeklySummary } = useAppState();
+  const { user } = useAuth();
 
   const totals = useMemo(() => {
     const checkIns = data.checkIns.length;
@@ -26,6 +30,33 @@ export default function InsightsPage() {
       topPracticeCount: topPractice ? topPractice[1] : 0,
     };
   }, [data.checkIns.length, data.resets, weeklySummary.streak]);
+
+  const gamificationPayload = useMemo<GamificationInput>(() => {
+    const weekCheckIns = weeklySummary.points.reduce((sum, point) => sum + point.checkIns, 0);
+    const weekResets = weeklySummary.points.reduce((sum, point) => sum + point.resets, 0);
+    const recentCheckIns = data.checkIns.slice(-5);
+    const recentMoods = recentCheckIns.map((checkIn) => checkIn.mood);
+    const recentPractices = recentCheckIns
+      .map((checkIn) => PRACTICE_LOOKUP[checkIn.practiceId]?.name)
+      .filter((name): name is string => Boolean(name));
+    const highlightPractices = data.resets.slice(-3).map((reset) => ({
+      name: PRACTICE_LOOKUP[reset.practiceId]?.name ?? "micro-reset",
+      completedAt: reset.completedAt,
+    }));
+
+    return {
+      doctorName: user?.displayName ?? "Doctor",
+      streakDays: weeklySummary.streak,
+      bestDay: weeklySummary.bestDay,
+      weekCheckIns,
+      weekResets,
+      lifetimeCheckIns: data.checkIns.length,
+      lifetimeResets: data.resets.length,
+      recentMoods,
+      recentPractices,
+      highlightPractices,
+    };
+  }, [data.checkIns, data.resets, user?.displayName, weeklySummary]);
 
   return (
     <AppShell
@@ -66,6 +97,8 @@ export default function InsightsPage() {
           <p className="text-sm text-[var(--muted)]">Once you log a few resets, you&#39;ll see your favourites here.</p>
         </Card>
       )}
+
+      <AIStoryCard payload={gamificationPayload} />
     </AppShell>
   );
 }
