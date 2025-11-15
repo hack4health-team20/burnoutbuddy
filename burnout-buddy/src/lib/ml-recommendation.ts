@@ -258,12 +258,46 @@ export const getMLRecommendations = (
     .sort((a, b) => b.score - a.score) // Sort by score descending
     .map(item => item.practice); // Extract practices
 
-  // If we don't have enough historical data, fallback to the original algorithm
+  // If we don't have enough historical data, fallback to the mood priority system
   if (scoredPractices.length === 0) {
-    // Fallback to original recommendation logic
-    return practices.filter(p => p.tags.includes(mood))
-      .filter(p => practiceSupportsTime(p, timeAvailable))
-      .slice(0, 3);
+    // Define mood priority system (same as in content/practices.ts)
+    const moodPriority: Record<MoodValue, string[]> = {
+      calm: ["visual-reset", "gratitude-note", "micro-stretch"],
+      ok: ["micro-stretch", "gratitude-note", "visual-reset"],
+      stressed: ["box-breathing", "micro-stretch", "mental-unload"],
+      exhausted: ["478-breathing", "box-breathing", "mental-unload"],
+    };
+    
+    // Get prioritized practice IDs for this mood
+    const prioritizedPracticeIds = moodPriority[mood] || [];
+    
+    // Filter for practices that support the requested time
+    const timeCompatiblePractices = practices.filter(p => 
+      practiceSupportsTime(p, timeAvailable)
+    );
+    
+    // Order practices according to the priority system
+    const orderedPractices = [...timeCompatiblePractices].sort((a, b) => {
+      const aPriority = prioritizedPracticeIds.indexOf(a.id);
+      const bPriority = prioritizedPracticeIds.indexOf(b.id);
+      
+      // If both are in the priority list, use priority order
+      if (aPriority !== -1 && bPriority !== -1) {
+        return aPriority - bPriority;
+      }
+      
+      // Practices in priority list come first
+      if (aPriority !== -1) return -1;
+      if (bPriority !== -1) return 1;
+      
+      // If neither is in priority list, maintain original order
+      return 0;
+    });
+    
+    // Filter to only practices that match the mood
+    const moodSpecificPractices = orderedPractices.filter(p => p.tags.includes(mood));
+    
+    return moodSpecificPractices.slice(0, 3);
   }
 
   return scoredPractices;
