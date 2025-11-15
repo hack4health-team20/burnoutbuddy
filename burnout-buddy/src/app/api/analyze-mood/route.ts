@@ -12,7 +12,7 @@ function analyzeMoodLocally(text: string) {
   const lowerText = text.toLowerCase();
   let detectedMood: string = 'stressed'; // Default mood
   let confidence: number = 0.5;
-  let analysisNotes: string[] = [];
+  const analysisNotes: string[] = [];
 
   // Check for exhaustion indicators
   const exhaustedKeywords = ['tired', 'exhausted', 'drained', 'burned out', 'worn out', 'depleted', 'sapped', 'fatigued', 'sleepy', 'drowsy', 'gassed', 'pooped', 'beat', 'washed up', 'dead on my feet'];
@@ -226,6 +226,7 @@ Respond ONLY in JSON format with no other text.`
     try {
       parsedResponse = JSON.parse(content);
     } catch (parseError) {
+      console.warn("Failed to parse OpenAI mood response", parseError);
       // Perform local analysis when JSON parsing fails
       const result = analyzeMoodLocally(text);
       

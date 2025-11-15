@@ -41,9 +41,9 @@ export const AIStoryCard = ({ payload }: AIStoryCardProps) => {
   }, [stablePayload]);
 
   return (
-    <Card className="flex flex-col gap-4 border border-white/40 bg-white/85">
-      <div className="flex items-center gap-3">
-        <div className="rounded-full bg-[var(--accent)]/15 p-2 text-[var(--accent)]">
+    <Card className="flex flex-col gap-6 border border-white/40 bg-white/90 p-5 sm:p-6">
+      <div className="flex flex-col gap-3 text-center sm:flex-row sm:items-center sm:gap-4 sm:text-left">
+        <div className="mx-auto rounded-full bg-[var(--accent)]/15 p-2 text-[var(--accent)] sm:mx-0">
           <Wand2 className="h-5 w-5" />
         </div>
         <div>
@@ -65,7 +65,7 @@ export const AIStoryCard = ({ payload }: AIStoryCardProps) => {
       )}
 
       {!error && (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-3">
           {[
             { label: "Achievement", value: stories?.achievementStory },
             { label: "Streak", value: stories?.streakCelebration },
@@ -75,7 +75,7 @@ export const AIStoryCard = ({ payload }: AIStoryCardProps) => {
               key={item.label}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: stories ? 1 : 0.6, y: 0 }}
-              className="rounded-[var(--radius-md)] border border-white/50 bg-white/70 p-4 text-sm text-[var(--muted)]"
+              className="rounded-[var(--radius-md)] border border-white/60 bg-white/75 p-4 text-sm text-[var(--muted)] shadow-[var(--shadow-soft)]"
             >
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--muted)]/70">
                 {item.label}
@@ -88,11 +88,16 @@ export const AIStoryCard = ({ payload }: AIStoryCardProps) => {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-[var(--muted)]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-[var(--muted)] text-center sm:text-left">
           These notes stay on your device. They help remind you why small resets matter.
         </p>
-        <Button variant="secondary" onClick={requestStories} disabled={loading}>
+        <Button
+          variant="secondary"
+          onClick={requestStories}
+          disabled={loading}
+          className="w-full justify-center sm:w-auto"
+        >
           {loading ? "Summoning..." : "Refresh Story"}
         </Button>
       </div>

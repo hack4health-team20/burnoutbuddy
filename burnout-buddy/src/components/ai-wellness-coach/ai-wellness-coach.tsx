@@ -3,25 +3,36 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MoodValue, TimeAvailable } from "@/types";
-import { useAppState } from "@/context/app-state-context";
-import { buildRecommendation } from "@/lib/recommendation";
 
 // Type definitions for speech recognition
 declare global {
   interface Window {
-    webkitSpeechRecognition: any;
-    SpeechRecognition: any;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    SpeechRecognition?: SpeechRecognitionConstructor;
   }
 }
 
-interface SpeechRecognitionEvent extends Event {
+interface BrowserSpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null;
+  onerror: ((event: BrowserSpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+}
+
+type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
+
+interface BrowserSpeechRecognitionEvent extends Event {
   resultIndex: number;
   results: SpeechRecognitionResultList;
 }
 
-interface SpeechRecognitionErrorEvent extends Event {
+interface BrowserSpeechRecognitionErrorEvent extends Event {
   error: string;
-  message: string;
+  message?: string;
 }
 
 interface Message {
@@ -30,6 +41,12 @@ interface Message {
   sender: "user" | "ai";
   timestamp: Date;
 }
+
+const getSpeechRecognitionConstructor = (): SpeechRecognitionConstructor | null => {
+  if (typeof window === "undefined") return null;
+  const Constructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  return Constructor ?? null;
+};
 
 interface AIWellnessCoachProps {
   onMoodSelected: (mood: MoodValue, reason: string) => void;
@@ -44,28 +61,26 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
   const [isRecording, setIsRecording] = useState(false);
   const [selectedMood, setSelectedMood] = useState<MoodValue | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null); // Will hold the speech recognition object
-  const { data } = useAppState();
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
 
   // Initialize speech recognition if available
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Check if SpeechRecognition is supported
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
+      const SpeechRecognitionCtor = getSpeechRecognitionConstructor();
+
+      if (SpeechRecognitionCtor) {
+        recognitionRef.current = new SpeechRecognitionCtor();
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = false;
         recognitionRef.current.lang = "en-US";
 
-        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        recognitionRef.current.onresult = (event: BrowserSpeechRecognitionEvent) => {
           const transcript = event.results[0][0].transcript;
           setInputText(transcript);
           setIsRecording(false);
         };
 
-        recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
+        recognitionRef.current.onerror = (event: BrowserSpeechRecognitionErrorEvent) => {
           console.error("Speech recognition error", event.error);
           setIsRecording(false);
           
@@ -95,15 +110,17 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
 
   // Add introductory message when component mounts
   useEffect(() => {
+    const shiftHint = onShift ? "I know you're mid-shift, so feel free to vent about the moment between patients." : "Since you're off shift, take a breath and tell me how the day actually felt.";
+    const timeHint = timeAvailable === "2m" ? "We have about two mindful minutes." : "We have closer to five minutes if you'd like to go deeper.";
     setMessages([
       {
         id: "intro",
-        text: "Hello! I'm your AI wellness coach. How has your day been so far? Share anything that stands out - positive or challenging.",
+        text: `Hello! I'm your AI wellness coach. ${shiftHint} ${timeHint} Share anything that stands out—positive or challenging—and I'll suggest a mood that fits.`,
         sender: "ai",
         timestamp: new Date(),
       }
     ]);
-  }, []);
+  }, [onShift, timeAvailable]);
 
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -147,7 +164,8 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
         const { detectedMood, confidence, reason } = await response.json();
 
         // Add AI response
-        let aiResponseText = `${reason} Should I select "${detectedMood}" as your current mood?`;
+        const confidenceText = typeof confidence === "number" ? ` (confidence: ${(confidence * 100).toFixed(0)}%)` : "";
+        const aiResponseText = `${reason}${confidenceText}. Should I select "${detectedMood}" as your current mood?`;
 
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -199,8 +217,8 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
   };
 
   return (
-    <Card className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[400px]">
+    <Card className="flex h-full flex-col rounded-[var(--radius-lg)] border border-white/40 bg-white/90 shadow-[var(--shadow-soft)]">
+      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6" style={{ minHeight: 280 }}>
         {messages.map((message) => (
           <motion.div
             key={message.id}
@@ -239,8 +257,8 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
 
       {/* Mood confirmation buttons (only appear when AI suggests a mood) */}
       {messages.length > 0 && messages[messages.length - 1]?.text.includes("Should I select") && (
-        <div className="p-4 border-t border-white/40 bg-white/50 rounded-b-[var(--radius-lg)]">
-          <p className="text-sm text-[var(--muted)] mb-3">Confirm your mood:</p>
+        <div className="border-t border-white/40 bg-white/70 px-4 py-4 sm:px-6">
+          <p className="mb-3 text-sm text-[var(--muted)]">Confirm your mood:</p>
           <div className="flex flex-wrap gap-2">
             {(['calm', 'ok', 'stressed', 'exhausted'] as MoodValue[]).map((mood) => (
               <Button
@@ -261,41 +279,47 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
       )}
 
       {/* Input area */}
-      <div className="p-4 border-t border-white/40 bg-white/50 rounded-b-[var(--radius-lg)]">
-        <div className="flex gap-2">
+      <div className="border-t border-white/40 bg-white/80 px-4 py-4 sm:px-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
             placeholder="Share how your day went..."
-            className="flex-1 rounded-full border border-white/40 bg-white/70 px-4 py-3 text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]"
+            className="w-full flex-1 rounded-full border border-white/60 bg-white/95 px-4 py-3 text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)] sm:min-w-0"
             disabled={isLoading}
           />
-          <Button
-            variant="secondary"
-            onClick={handleVoiceInput}
-            disabled={isLoading}
-            className={`w-12 h-12 flex items-center justify-center rounded-full shadow-sm ${isRecording ? '!bg-red-500 !hover:bg-red-600' : '!bg-[var(--accent)] !hover:bg-[var(--accent-strong)]'} !text-white`}
-          >
-            {isRecording ? (
-              <span className="flex h-4 w-4">
-                <span className="animate-ping absolute h-4 w-4 rounded-full bg-white opacity-75"></span>
-                <span className="relative h-4 w-4 rounded-full bg-white"></span>
-              </span>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                <path d="M8.25 4.5a3.75 3.75 0 1 1 7.5 0v8.25a3.75 3.75 0 1 1-7.5 0V4.5Z" />
-                <path d="M6 10.5a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 1 0 10.5 0v-1.5a.75.75 0 0 1 1.5 0v1.5a6.751 6.751 0 0 1-6 6.709v2.291h3a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5h3v-2.291a6.751 6.751 0 0 1-6-6.709v-1.5A.75.75 0 0 1 6 10.5Z" />
-              </svg>
-            )}
-          </Button>
-          <Button onClick={handleSend} disabled={!inputText.trim() || isLoading}>
-            Send
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Button
+              variant="secondary"
+              onClick={handleVoiceInput}
+              disabled={isLoading}
+              className={`flex h-12 w-full items-center justify-center rounded-full shadow-sm sm:w-12 ${isRecording ? "!bg-red-500 !hover:bg-red-600" : "!bg-[var(--accent)] !hover:bg-[var(--accent-strong)]"} !text-white`}
+            >
+              {isRecording ? (
+                <span className="flex h-4 w-4">
+                  <span className="animate-ping absolute h-4 w-4 rounded-full bg-white opacity-75"></span>
+                  <span className="relative h-4 w-4 rounded-full bg-white"></span>
+                </span>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                  <path d="M8.25 4.5a3.75 3.75 0 1 1 7.5 0v8.25a3.75 3.75 0 1 1-7.5 0V4.5Z" />
+                  <path d="M6 10.5a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 1 0 10.5 0v-1.5a.75.75 0 0 1 1.5 0v1.5a6.751 6.751 0 0 1-6 6.709v2.291h3a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5h3v-2.291a6.751 6.751 0 0 1-6-6.709v-1.5A.75.75 0 0 1 6 10.5Z" />
+                </svg>
+              )}
+            </Button>
+            <Button
+              onClick={handleSend}
+              disabled={!inputText.trim() || isLoading}
+              className="w-full justify-center sm:w-auto"
+            >
+              Send
+            </Button>
+          </div>
         </div>
-        <p className="text-xs text-[var(--muted)]/70 mt-2">
-          Describe your day - the AI wellness coach will analyze your sentiment and suggest an appropriate mood.
+        <p className="mt-3 text-center text-xs text-[var(--muted)]/70 sm:text-left">
+          Describe your day—the AI wellness coach will analyze your sentiment and suggest an appropriate mood and reset path.
         </p>
       </div>
     </Card>
