@@ -34,17 +34,6 @@ const calculateMoodImprovement = (preMood: MoodValue, postMood: "better" | "same
   return postMood === "better" ? 1.0 : 0.0; // Better = 1.0, Same = 0.0
 };
 
-// Get mood value as a number (calm=4, ok=3, stressed=2, exhausted=1)
-const getMoodValue = (mood: MoodValue): number => {
-  switch (mood) {
-    case "calm": return 4;
-    case "ok": return 3;
-    case "stressed": return 2;
-    case "exhausted": return 1;
-    default: return 2.5;
-  }
-};
-
 // Analyze historical data to build user patterns
 const analyzeUserPatterns = (checkIns: MoodCheckIn[], resets: ResetLog[]): UserPattern => {
   const timeOfDayPatterns: Record<string, number> = {};
@@ -52,7 +41,6 @@ const analyzeUserPatterns = (checkIns: MoodCheckIn[], resets: ResetLog[]): UserP
   let totalImprovement = 0;
   let improvementCount = 0;
   const practiceEffectiveness: Record<string, { total: number, count: number }> = {};
-  const practiceMap: Record<string, number> = {};
 
   // Process all resets to determine effectiveness
   resets.forEach(reset => {
@@ -75,7 +63,7 @@ const analyzeUserPatterns = (checkIns: MoodCheckIn[], resets: ResetLog[]): UserP
       // Track time of day and day of week patterns
       const hour = getHour(reset.startedAt);
       const day = getDayOfWeek(reset.startedAt);
-
+      
       timeOfDayPatterns[hour] = (timeOfDayPatterns[hour] || 0) + improvement;
       dayOfWeekPatterns[day] = (dayOfWeekPatterns[day] || 0) + improvement;
 
@@ -131,7 +119,7 @@ const calculatePracticeScore = (
   const userMoodEffectiveness = historicalEffectiveness
     .filter(e => e.practiceId === practice.id && e.mood === mood)
     .reduce((sum, e) => sum + e.effectivenessScore, 0);
-
+  
   baseScore += userMoodEffectiveness * 0.3; // Weight: 30%
 
   // Factor 2: Time of day pattern matching
@@ -251,8 +239,8 @@ export const getMLRecommendations = (
 
   // Score all practices based on ML algorithm
   const scoredPractices = practices
-    .filter(practice =>
-      practice.tags.includes(mood) &&
+    .filter(practice => 
+      practice.tags.includes(mood) && 
       practiceSupportsTime(practice, timeAvailable)
     )
     .map(practice => ({
@@ -287,9 +275,9 @@ export const getPracticeEffectivenessForMood = (
   mood: MoodValue,
   effectivenessData: PracticeEffectiveness[]
 ): number => {
-  const effectiveness = effectivenessData.find(e =>
+  const effectiveness = effectivenessData.find(e => 
     e.practiceId === practiceId && e.mood === mood
   );
-
+  
   return effectiveness ? effectiveness.effectivenessScore : 0.5; // Default to neutral
 };

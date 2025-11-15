@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/context/auth-context";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/app/home", label: "Today" },
@@ -22,7 +23,8 @@ interface AppShellProps {
 
 export const AppShell = ({ title, description, children }: AppShellProps) => {
   const pathname = usePathname();
-  const { user, isDemo } = useAuth();
+  const { user, isDemo, signOut, sessionType } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
 
   const greetingName = user?.displayName ? user.displayName.replace(/^Dr\.?\s*/i, "Dr. ") : "Dr. Friend";
 
@@ -42,24 +44,44 @@ export const AppShell = ({ title, description, children }: AppShellProps) => {
             Hi, {isDemo ? "there" : greetingName}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          {navItems.map((item) => {
-            const active = pathname?.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "rounded-full px-4 py-2 text-sm font-medium transition",
-                  active
-                    ? "bg-[var(--accent)] text-white shadow-sm"
-                    : "text-[var(--muted)] hover:bg-white/70"
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+        <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            {navItems.map((item) => {
+              const active = pathname?.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "rounded-full px-4 py-2 text-sm font-medium transition",
+                    active
+                      ? "bg-[var(--accent)] text-white shadow-sm"
+                      : "text-[var(--muted)] hover:bg-white/70"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+          {sessionType && (
+            <Button
+              variant="ghost"
+              size="sm"
+              subtleHover
+              disabled={signingOut}
+              onClick={async () => {
+                setSigningOut(true);
+                try {
+                  await signOut();
+                } finally {
+                  setSigningOut(false);
+                }
+              }}
+            >
+              {signingOut ? "Signing out…" : isDemo ? "Leave demo" : "Sign out"}
+            </Button>
+          )}
         </div>
       </motion.nav>
 

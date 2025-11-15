@@ -92,7 +92,11 @@ const maybePersist = async (
   }
 
   if (sessionType === "firebase" && uid && isFirebaseConfigured) {
-    await persistBurnoutData(uid, data);
+    try {
+      await persistBurnoutData(uid, data);
+    } catch (error) {
+      console.warn("Unable to persist Burnout Buddy data to Firestore.", error);
+    }
   }
 };
 
