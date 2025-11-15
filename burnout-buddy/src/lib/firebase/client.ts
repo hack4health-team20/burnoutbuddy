@@ -23,7 +23,9 @@ export const isFirebaseConfigured = requiredKeys.every((key) => Boolean(firebase
 let appInstance: FirebaseApp | null = null;
 let firestoreInstance: Firestore | null = null;
 
-const firestoreSettings: FirestoreSettings = {
+type ExtendedFirestoreSettings = FirestoreSettings & { useFetchStreams?: boolean };
+
+const firestoreSettings: ExtendedFirestoreSettings = {
   experimentalAutoDetectLongPolling: true,
   useFetchStreams: false,
 };
