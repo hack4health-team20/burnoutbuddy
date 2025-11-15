@@ -34,17 +34,6 @@ const calculateMoodImprovement = (preMood: MoodValue, postMood: "better" | "same
   return postMood === "better" ? 1.0 : 0.0; // Better = 1.0, Same = 0.0
 };
 
-// Get mood value as a number (calm=4, ok=3, stressed=2, exhausted=1)
-const getMoodValue = (mood: MoodValue): number => {
-  switch (mood) {
-    case "calm": return 4;
-    case "ok": return 3;
-    case "stressed": return 2;
-    case "exhausted": return 1;
-    default: return 2.5;
-  }
-};
-
 // Analyze historical data to build user patterns
 const analyzeUserPatterns = (checkIns: MoodCheckIn[], resets: ResetLog[]): UserPattern => {
   const timeOfDayPatterns: Record<string, number> = {};
@@ -52,7 +41,6 @@ const analyzeUserPatterns = (checkIns: MoodCheckIn[], resets: ResetLog[]): UserP
   let totalImprovement = 0;
   let improvementCount = 0;
   const practiceEffectiveness: Record<string, { total: number, count: number }> = {};
-  const practiceMap: Record<string, number> = {};
 
   // Process all resets to determine effectiveness
   resets.forEach(reset => {

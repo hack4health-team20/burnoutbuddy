@@ -85,3 +85,22 @@ export interface TimerSession {
   mood: MoodValue;
   timeAvailable: TimeAvailable;
 }
+
+export interface GamificationInput {
+  doctorName: string;
+  streakDays: number;
+  bestDay?: string;
+  weekCheckIns: number;
+  weekResets: number;
+  lifetimeCheckIns: number;
+  lifetimeResets: number;
+  recentMoods: MoodValue[];
+  recentPractices: string[];
+  highlightPractices: { name: string; completedAt?: string }[];
+}
+
+export interface GamificationStories {
+  achievementStory: string;
+  streakCelebration: string;
+  progressNarrative: string;
+}
