@@ -7,7 +7,9 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  LineController,
   BarElement,
+  BarController,
   Tooltip,
   Legend,
   type ChartData,
@@ -16,7 +18,17 @@ import {
 import { Chart } from "react-chartjs-2";
 import { WeeklySummary } from "@/lib/analytics";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  LineController,
+  BarElement,
+  BarController,
+  Tooltip,
+  Legend
+);
 
 interface WeeklyChartProps {
   summary: WeeklySummary;
