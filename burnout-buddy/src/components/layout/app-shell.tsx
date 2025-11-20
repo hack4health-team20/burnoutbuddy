@@ -26,7 +26,11 @@ export const AppShell = ({ title, description, children }: AppShellProps) => {
   const { user, isDemo, signOut, sessionType } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
 
-  const greetingName = user?.displayName ? user.displayName.replace(/^Dr\.?\s*/i, "Dr. ") : "Dr. Friend";
+  const greetingName = user?.displayName
+  ? /^Dr\.?\s*/i.test(user.displayName)
+    ? user.displayName.replace(/^Dr\.?\s*/i, "Dr. ")
+    : `Dr. ${user.displayName}`
+  : "Dr. Friend";
 
   return (
     <div className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 pb-16 pt-6 sm:gap-8 sm:px-10 sm:pt-10">

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Mic } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { MoodValue, TimeAvailable } from "@/types";
 
@@ -217,7 +218,7 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
   };
 
   return (
-    <Card className="flex h-full flex-col rounded-[var(--radius-lg)] border border-white/40 bg-white/90 shadow-[var(--shadow-soft)]">
+    <Card className="flex h-full w-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-white/40 bg-white/90 shadow-[var(--shadow-soft)]">
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6" style={{ minHeight: 280 }}>
         {messages.map((message) => (
           <motion.div
@@ -279,7 +280,7 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
       )}
 
       {/* Input area */}
-      <div className="border-t border-white/40 bg-white/80 px-4 py-4 sm:px-6">
+      <div className="w-full border-t border-white/40 bg-white/80 px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="text"
@@ -297,17 +298,12 @@ export const AIWellnessCoach = ({ onMoodSelected, timeAvailable, onShift }: AIWe
               disabled={isLoading}
               className={`flex h-12 w-full items-center justify-center rounded-full shadow-sm sm:w-12 ${isRecording ? "!bg-red-500 !hover:bg-red-600" : "!bg-[var(--accent)] !hover:bg-[var(--accent-strong)]"} !text-white`}
             >
-              {isRecording ? (
-                <span className="flex h-4 w-4">
-                  <span className="animate-ping absolute h-4 w-4 rounded-full bg-white opacity-75"></span>
-                  <span className="relative h-4 w-4 rounded-full bg-white"></span>
-                </span>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                  <path d="M8.25 4.5a3.75 3.75 0 1 1 7.5 0v8.25a3.75 3.75 0 1 1-7.5 0V4.5Z" />
-                  <path d="M6 10.5a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 1 0 10.5 0v-1.5a.75.75 0 0 1 1.5 0v1.5a6.751 6.751 0 0 1-6 6.709v2.291h3a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5h3v-2.291a6.751 6.751 0 0 1-6-6.709v-1.5A.75.75 0 0 1 6 10.5Z" />
-                </svg>
-              )}
+              <span className="relative flex h-5 w-5 items-center justify-center">
+                {isRecording && (
+                  <span className="absolute h-6 w-6 rounded-full border border-white/70 opacity-70 animate-ping" />
+                )}
+                <Mic className="relative h-4 w-4" strokeWidth={2.4} color="white" />
+              </span>
             </Button>
             <Button
               onClick={handleSend}

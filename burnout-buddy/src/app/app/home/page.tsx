@@ -87,7 +87,7 @@ export default function HomePage() {
 
           {/* AI wellness coach tab */}
           {activeTab === "ai" && (
-            <div className="h-[450px]">
+            <div className="min-h-[450px]">
               <AIWellnessCoach 
                 onMoodSelected={handleAIDetectedMood} 
                 timeAvailable={moodForm.timeAvailable}
