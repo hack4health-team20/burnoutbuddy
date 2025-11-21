@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -104,6 +105,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<InternalState>(initialState);
   const { sessionType, user } = useAuth();
   const router = useRouter();
+  const hasSyncedFirebase = useRef(false);
 
   // Hydrate from storage or Firestore when session changes.
   useEffect(() => {
@@ -111,11 +113,13 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
 
     const hydrate = async () => {
       if (!sessionType) {
+        hasSyncedFirebase.current = false;
         setState({ ...initialState, data: emptyBurnoutData, hydrated: true });
         return;
       }
 
       if (sessionType === "demo") {
+        hasSyncedFirebase.current = false;
         const stored = readLocalData();
         setState({
           data: stored ?? emptyBurnoutData,
@@ -129,9 +133,11 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (sessionType === "firebase" && user && isFirebaseConfigured) {
+        hasSyncedFirebase.current = false;
         try {
           const data = await fetchBurnoutData(user.uid);
           if (!cancelled) {
+            hasSyncedFirebase.current = true;
             setState({
               data,
               hydrated: true,
@@ -144,6 +150,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         } catch (error) {
           console.error("Unable to fetch data from Firestore", error);
           if (!cancelled) {
+            hasSyncedFirebase.current = true;
             setState({ ...initialState, data: emptyBurnoutData, hydrated: true });
           }
         }
@@ -160,6 +167,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   // Persist data when it changes after hydration.
   useEffect(() => {
     if (!state.hydrated) return;
+    if (sessionType === "firebase" && !hasSyncedFirebase.current) return;
     void maybePersist(sessionType, user?.uid, state.data);
   }, [state.data, state.hydrated, sessionType, user?.uid]);
 
